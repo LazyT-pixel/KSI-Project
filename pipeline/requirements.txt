@@ -1,0 +1,8 @@
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+imbalanced-learn
+
+run command: pip install -r requirements.txt
