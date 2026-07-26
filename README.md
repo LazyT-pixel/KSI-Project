@@ -48,8 +48,8 @@ This is the actual current layout (differs slightly from earlier drafts — note
 ├── docs/
 │   └── KSI_Glossary.pdf          # field definitions from Toronto Police
 ├── notebooks/
-│   ├── 01_exploration_group1_location.ipynb          # Aboud — stub, pending
-│   ├── 02_exploration_group2_people_vehicles.ipynb    # Ibrahim — stub, pending
+│   ├── 01_exploration_group1_location.ipynb          # originally Aboud's — completed by Aidan, no submission received
+│   ├── 02_exploration_group2_people_vehicles.ipynb    # Ibrahim — submitted, real analysis
 │   ├── 03_exploration_group3_flags.ipynb              # Aidan — done, real findings
 │   └── 04_data_modelling.ipynb                        # Aidan — Group 4, mirrors KSI.py with commentary
 └── pipeline/
@@ -58,24 +58,45 @@ This is the actual current layout (differs slightly from earlier drafts — note
         └── Part1_Report.docx     # Part 1 submission report
 ```
 
-## Status (as of tonight)
+## Status — FINAL for Part 1 submission
 
 - [x] Dataset downloaded, verified against glossary (52 columns match)
 - [x] Target column (`ACCLASS`) definition and edge cases identified
-- [x] Modelling pipeline built (`KSI.py`) — cleaning, column transformers,
-      train/test split, imbalance-handling notes
+- [x] Modelling pipeline built and verified running end-to-end (`KSI.py`) —
+      cleaning, leakage/high-cardinality/structural-missingness columns
+      dropped, HOUR feature engineered, encoding, 80/20 stratified split
+      (15,164 train / 3,792 test rows, 373 features after encoding)
 - [x] Group 3 exploration (Aidan) — done, real stats + chart in
       `notebooks/03_exploration_group3_flags.ipynb`
-- [x] Part 1 report drafted (`pipeline/report/Part1_Report.docx`) — includes
-      Group 3 findings in full; Group 1/2 sections marked as placeholders
-- [ ] Group 1 exploration (Aboud) — stub notebook ready at
-      `notebooks/01_exploration_group1_location.ipynb`, needs real analysis
-- [ ] Group 2 exploration (Ibrahim) — stub notebook ready at
-      `notebooks/02_exploration_group2_people_vehicles.ipynb`, needs real analysis
-- [ ] Once Group 1/2 findings are in: update the placeholder sections in
-      `Part1_Report.docx` and re-check `KSI.py`'s column lists for anything
-      that should be dropped (high missing %, unusable cardinality)
-- [ ] Fill in Group #, Section #, and full team names on the report title page
+- [x] Group 1 exploration — originally assigned to Aboud; completed by Aidan
+      after no submission was received by the internal deadline. Missing
+      data/cardinality check, fatal-rate breakdowns, hour-of-day + district
+      charts, in `notebooks/01_exploration_group1_location.ipynb`
+- [x] Group 2 exploration (Ibrahim) — submitted just before the deadline.
+      Full column-by-column analysis (data type, missing %, unique values,
+      distribution, crosstab vs. ACCLASS) for every Group 2 column, in
+      `notebooks/02_exploration_group2_people_vehicles.ipynb`. Verified it
+      runs cleanly end-to-end; findings cross-validate with the rest of the
+      report (e.g. pedestrian 18.2% vs. driver 12.7% fatal rate, matching
+      the Group 2 numbers already in `Part1_Report.docx`)
+- [x] Part 1 report finalized (`pipeline/report/Part1_Report.docx`) — all
+      four sections complete, feature selection and data modelling sections
+      reflect the final column decisions below
+- [x] Per-person vs. per-collision decision: discussed, not implemented for
+      Part 1 given the time available — documented as a Part 2 candidate
+      improvement in the report's assumptions section instead of left open
+- [x] Column decisions finalized in `KSI.py`: dropped `FATAL_NO` (data
+      leakage — only populated when that person died), dropped
+      `STREET1`/`STREET2` (too high-cardinality), dropped `DATE`/`TIME` in
+      favor of an engineered `HOUR` feature, dropped the pedestrian/cyclist-
+      only columns (structurally missing, redundant with Group 3's flags)
+
+**Note on attribution:** Group 1's analysis was completed by Aidan after
+Aboud did not submit work by the agreed internal deadline (see communication
+timeline — Sunday planning session, Thursday soft deadline, Friday/Saturday
+follow-ups). Group 2's analysis was submitted by Ibrahim directly, close to
+the final deadline. This is disclosed here and in the report itself for
+transparency ahead of peer evaluation.
 
 ## Setup
 

@@ -1,8 +1,11 @@
 """
-KSI Data Modelling — Starter Pipeline Skeleton
+KSI Data Modelling Pipeline
 Part 1 deliverable #2: cleaning, encoding, train/test split, imbalance handling, Pipeline.
 
-Fill in the column lists / choices based on what Groups 1-3 found during exploration
+Column decisions finalized based on the exploration findings in notebooks 01-03
+(Group 1/2 notebooks were completed as drafts when those group members did not
+submit their own analysis in time; decisions below follow directly from what
+that analysis found).
 """
 
 import pandas as pd
@@ -19,12 +22,28 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 df = pd.read_csv("data/TOTAL_KSI_4115794401574937330.csv", encoding="utf-8-sig")
 
 # ---------------------------------------------------------------------------
+# 1b. Feature engineering: HOUR from TIME
+# ---------------------------------------------------------------------------
+# TIME is stored as HHMM without leading zeros (e.g. 236 = 2:36 AM), not usable
+# directly. Group 1's exploration found a real pattern here (5 AM spikes to a
+# 26.6% fatal rate vs ~14% baseline; congested 3-5 PM afternoon hours run lower
+# despite heavier traffic) so it's worth keeping as an engineered feature
+# rather than dropping TIME entirely.
+df["HOUR"] = (df["TIME"] // 100).clip(0, 23)
+
+# ---------------------------------------------------------------------------
 # 2. Drop low-value / identifier columns (from glossary review)
 # ---------------------------------------------------------------------------
 drop_cols = [
     "INDEX", "ACCNUM", "OBJECTID", "OFFSET",
     "HOOD_140", "NEIGHBOURHOOD_140",  # older duplicates of the _158 versions
     "x", "y",  # projected copies of LATITUDE/LONGITUDE, redundant
+    "FATAL_NO",  # DATA LEAKAGE: only populated when the person died — its
+                 # presence directly reveals the target, must never be a feature
+    "STREET1", "STREET2",  # too high-cardinality (1,942 / 2,821 unique) to
+                            # encode sensibly; DISTRICT/NEIGHBOURHOOD_158 already
+                            # capture location at a usable granularity
+    "DATE", "TIME",  # replaced by the engineered HOUR feature below
 ]
 df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
@@ -48,32 +67,32 @@ y = df[target_col]
 X = df.drop(columns=[target_col])
 
 # ---------------------------------------------------------------------------
-# 4. Column groups
+# 4. Column groups — finalized from the exploration findings (notebooks 01-03)
 #
-# TODO (waiting on group findings, don't finalize yet):
-#   - Group 1 (Aboud) and Group 2 (Ibrahim) haven't submitted their exploration
-#     findings yet. The lists below are PLACEHOLDERS based on the raw column
-#     list only — once they report missing-data % and cardinality per column,
-#     come back and drop/adjust anything that's mostly empty or unusably high
-#     cardinality (e.g. free-text-like fields).
-#   - Group 3 (Aidan) is the one section here I've actually reviewed against
-#     the real data — the Yes/No flags are clean (Yes/blank), low cardinality,
-#     safe to one-hot as-is.
+#   - Group 1 (location/conditions): kept the low-cardinality, mostly-complete
+#     columns. STREET1/STREET2/DATE/TIME dropped above (too high-cardinality,
+#     or replaced by HOUR). LATITUDE/LONGITUDE kept as numeric.
+#   - Group 2 (people/vehicles): PEDTYPE/PEDACT/PEDCOND and CYCLISTYPE/CYCACT/
+#     CYCCOND are dropped here — they're 83-96% missing *by design* (only
+#     apply to pedestrian/cyclist rows respectively, not randomly missing),
+#     and Group 3's PEDESTRIAN/CYCLIST flags already capture whether those
+#     involvement types were present. Including them would mean imputing
+#     nonsense values onto rows they don't apply to.
+#   - Group 3 (Yes/No flags): clean (Yes/blank), low cardinality, one-hot as-is.
 # ---------------------------------------------------------------------------
 categorical_cols = [
-    # Group 1 (location/conditions) — PLACEHOLDER, pending Aboud's findings
+    # Group 1 — location/conditions
     "ROAD_CLASS", "DISTRICT", "ACCLOC", "TRAFFCTL", "VISIBILITY",
     "LIGHT", "RDSFCOND", "DIVISION", "NEIGHBOURHOOD_158",
-    # Group 2 (people/vehicles) — PLACEHOLDER, pending Ibrahim's findings
+    # Group 2 — people/vehicles (pedestrian/cyclist-only columns excluded, see above)
     "INVTYPE", "INVAGE", "INJURY", "INITDIR", "VEHTYPE", "MANOEUVER",
-    "DRIVACT", "DRIVCOND", "PEDTYPE", "PEDACT", "PEDCOND",
-    "CYCLISTYPE", "CYCACT", "CYCCOND",
-    # Group 3 (Yes/No flags) — reviewed against real data, values are "Yes"/blank
+    "DRIVACT", "DRIVCOND",
+    # Group 3 — Yes/No flags
     "PEDESTRIAN", "CYCLIST", "AUTOMOBILE", "MOTORCYCLE", "TRUCK",
     "TRSN_CITY_VEH", "EMERG_VEH", "PASSENGER", "SPEEDING", "AG_DRIV",
     "REDLIGHT", "ALCOHOL", "DISABILITY",
 ]
-numeric_cols = ["LATITUDE", "LONGITUDE"]  # add more if kept (e.g. engineered hour/month from DATE/TIME)
+numeric_cols = ["LATITUDE", "LONGITUDE", "HOUR"]
 
 # keep only columns that actually exist in X (avoids KeyErrors if some got dropped earlier)
 categorical_cols = [c for c in categorical_cols if c in X.columns]
