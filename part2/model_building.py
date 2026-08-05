@@ -20,8 +20,13 @@ pass once we agree these 5 are the right set for the assignment):
 NOTE: check the Part 2 assignment sheet for the exact required algorithm
 list/count before treating this as final -- swap any of these out if it
 specifies different ones.
+
+RUN THIS FROM THE REPO ROOT (not from inside part2/):
+    python3 part2/model_building.py
 """
 
+import os
+import sys
 import time
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -33,6 +38,10 @@ from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
     confusion_matrix, classification_report,
 )
+
+# Lets this find KSI.py at the repo root no matter where this script is run
+# from (this file lives in part2/, KSI.py lives one level up).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import KSI  # noqa: E402  (runs KSI.py's Part 1 pipeline, exposes the variables below)
 
