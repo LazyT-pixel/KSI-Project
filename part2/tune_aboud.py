@@ -1,21 +1,41 @@
 """
 Part 2 - Aboud's task: tune Logistic Regression and Linear SVM.
 
-WHAT TO DO:
-1. Open a terminal in the main project folder (the one with KSI.py in it),
-   then run: python3 part2/tune_aboud.py
-2. It will print the "best settings" it found for each model, and how well
-   each model did on the test data.
-3. Copy the printed results.
-4. Write 3-4 sentences about what you see. Example questions to answer:
+WHAT TO DO (please do all steps, don't skip to the end):
+
+STEP 1 - Before you run anything, answer this for yourself (one sentence,
+write it down, you'll send it with your results):
+  "C" controls how closely the model fits the training data.
+  A SMALL C (like 0.01) = simpler model, may underfit (miss real patterns).
+  A LARGE C (like 100) = fits the training data very closely, may overfit
+  (memorizes the training data instead of learning general patterns, and
+  does worse on new/unseen data).
+  Question: what do you think will happen to accuracy vs. recall if C is
+  very small compared to very large? Just guess, that's the point.
+
+STEP 2 - Fill in the "C_values" list below (search for "TODO"). Pick at
+least 4 values: something small (0.001-0.01), something medium (0.1-1),
+something large (10-100), and one more of your choice. You choose the
+exact numbers.
+
+STEP 3 - Open a terminal in the main project folder (the one with KSI.py
+in it), then run: python3 part2/tune_aboud.py
+
+STEP 4 - It prints the "best settings" it found for each model, and how
+well each model did on the test data.
+
+STEP 5 - Write 3-4 sentences about what you see:
    - Which of the two models (Logistic Regression or Linear SVM) did better?
    - Did tuning improve "recall" compared to the baseline numbers we already
      have? (Recall = how many of the real fatal accidents we correctly caught.)
-5. Send me your 3-4 sentences + the printed results.
+   - Was your guess from Step 1 right or wrong? Why do you think that is?
 
-YOU CAN CHANGE THE NUMBERS in "param_grid" below if you want to try more
-combinations, but you don't have to - the current lists already test a
-reasonable range.
+STEP 6 - Send me: your Step 1 guess, your Step 5 write-up, and everything
+the script printed.
+
+This isn't a trick - there's no single "correct" list of C values. The
+point is picking them yourself and seeing what happens, not just running
+someone else's numbers.
 """
 
 import os
@@ -65,16 +85,28 @@ def tune_and_report(name, model, param_grid):
     return best_model
 
 
+# TODO: pick at least 4 values yourself - one small, one medium, one large,
+# and one more of your choice. Delete the placeholder and put your own numbers.
+# Example of the FORMAT (not the values to use): C_values = [0.01, 0.1, 1, 10]
+C_values = []  # <-- fill this in, e.g. C_values = [0.001, 0.1, 5, 50]
+
+if not C_values:
+    raise ValueError(
+        "C_values is empty! Go fill in the TODO above with your own numbers "
+        "before running this (see STEP 1 and STEP 2 in the instructions at "
+        "the top of this file)."
+    )
+
 # --- Model 1: Logistic Regression ---
 log_reg_grid = {
-    "C": [0.01, 0.1, 1, 10],          # smaller = simpler model, larger = fits data more closely
+    "C": C_values,
     "class_weight": ["balanced"],      # keep this - it helps catch more fatal cases
 }
 tune_and_report("Logistic Regression", LogisticRegression(max_iter=1000, random_state=42), log_reg_grid)
 
 # --- Model 2: Linear SVM ---
 svm_grid = {
-    "C": [0.01, 0.1, 1, 10],
+    "C": C_values,
     "class_weight": ["balanced"],
 }
 tune_and_report("Linear SVM", LinearSVC(max_iter=5000, random_state=42), svm_grid)

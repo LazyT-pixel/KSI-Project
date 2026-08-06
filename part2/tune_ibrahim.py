@@ -1,20 +1,42 @@
 """
 Part 2 - Ibrahim's task: tune Decision Tree and Random Forest.
 
-WHAT TO DO:
-1. Open a terminal in the main project folder (the one with KSI.py in it),
-   then run: python3 part2/tune_ibrahim.py
-2. It prints the "best settings" found for each model, and how well each
-   model does on the test data.
-3. Write a short summary (a few sentences):
-   - Which of the two did better?
+WHAT TO DO (please do all steps, don't skip to the end):
+
+STEP 1 - Before running anything, write one or two sentences predicting
+what you expect:
+  "max_depth" limits how deep a tree can grow. A shallow tree (small number,
+  like 5) is simpler and might miss patterns (underfit). A deep tree
+  (large number, or None = unlimited) can fit the training data very
+  closely, which sometimes means it does worse on new data (overfit).
+  "n_estimators" (Random Forest only) is how many trees get combined -
+  more trees is usually more stable but slower to train.
+  Question: do you expect a deeper tree to have higher or lower recall
+  than a shallow one? Just guess - you'll check yourself in Step 5.
+
+STEP 2 - Fill in the TODO grids below yourself (search for "TODO"). Pick
+your own values for max_depth, min_samples_leaf, and n_estimators - the
+comments next to each explain what they control and give a reasonable
+range to pick from.
+
+STEP 3 - Open a terminal in the main project folder (the one with KSI.py
+in it), then run: python3 part2/tune_ibrahim.py
+
+STEP 4 - It prints the "best settings" found for each model, and how well
+each model does on the test data.
+
+STEP 5 - Write a short summary (a few sentences):
+   - Which of the two (Decision Tree or Random Forest) did better?
    - Did tuning improve recall vs. the untuned baseline we already ran?
    - Random Forest had very high precision but low recall in the baseline
      run - does tuning change that trade-off at all?
-4. Send back your write-up + the printed results.
+   - Was your Step 1 guess right or wrong?
 
-Feel free to expand the "param_grid" values below if you want to search a
-wider range - not required, current ranges are reasonable.
+STEP 6 - Send back your Step 1 guess, your Step 5 write-up, and everything
+the script printed.
+
+There's no single "correct" grid here - pick values yourself and see what
+actually happens, don't just copy someone else's numbers.
 """
 
 import os
@@ -61,18 +83,44 @@ def tune_and_report(name, model, param_grid):
     return best_model
 
 
+# TODO: pick your own values (delete the empty lists and fill in numbers).
+# max_depth: try a few between 3 and 30, plus None (unlimited) if you want.
+#   Example FORMAT (not the values to use): [5, 10, 20, None]
+tree_max_depth = []          # <-- fill this in
+# min_samples_leaf: try a few small numbers, e.g. between 1 and 20.
+tree_min_samples_leaf = []   # <-- fill this in
+
+if not tree_max_depth or not tree_min_samples_leaf:
+    raise ValueError(
+        "tree_max_depth / tree_min_samples_leaf is empty! Fill in the TODOs "
+        "above with your own numbers first (see STEP 1 and STEP 2 at the top "
+        "of this file)."
+    )
+
 # --- Model 1: Decision Tree ---
 tree_grid = {
-    "max_depth": [5, 10, 20, None],        # limits how deep the tree grows; None = no limit
-    "min_samples_leaf": [1, 5, 10],        # minimum data points needed in a leaf
+    "max_depth": tree_max_depth,
+    "min_samples_leaf": tree_min_samples_leaf,
     "class_weight": ["balanced"],
 }
 tune_and_report("Decision Tree", DecisionTreeClassifier(random_state=42), tree_grid)
 
+# TODO: pick your own values for the forest too.
+# n_estimators: number of trees - try a couple values between 50 and 300.
+forest_n_estimators = []     # <-- fill this in
+# max_depth: same idea as the tree above.
+forest_max_depth = []        # <-- fill this in
+
+if not forest_n_estimators or not forest_max_depth:
+    raise ValueError(
+        "forest_n_estimators / forest_max_depth is empty! Fill in the TODOs "
+        "above with your own numbers first."
+    )
+
 # --- Model 2: Random Forest ---
 forest_grid = {
-    "n_estimators": [100, 150],            # number of trees in the forest
-    "max_depth": [10, 20],
+    "n_estimators": forest_n_estimators,
+    "max_depth": forest_max_depth,
     "class_weight": ["balanced"],
 }
 # Note: RandomForestClassifier itself isn't set to n_jobs=-1 here (only the
