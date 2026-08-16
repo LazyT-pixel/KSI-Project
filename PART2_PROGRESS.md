@@ -95,30 +95,40 @@ the honest baseline going forward.
   pushing recall up across the board, since fatal cases are only ~14% of the data
   and models would otherwise mostly ignore that class.
 
-## Final tuned comparison (Aug 15, corrected pipeline)
+## Final tuned comparison (Aug 15/16, corrected pipeline)
 
-Run via `part2/final_model_selection.py` — one consistent GridSearchCV pass
-(cv=5, scored on recall) across all 5 models, small grids given the time left
-before the deadline. Full grids and code are in that file.
+Run via `part2/final_model_selection.py` — per the actual assignment sheet
+("fine tune the models using Grid search and randomized grid search" and
+"plot the ROC curves of the models"), **every one of the 5 models gets both
+grid search and randomized search** (cv=5, scored on recall), and all 5 are
+plotted on one ROC chart (`part2/roc_all_models.png`). Whichever search found
+the better result (recall, then F1) is kept per model. Small grids/iteration
+counts given the time left before the deadline — real search, not exhaustive.
 
-| Model | Accuracy | Precision | Recall | F1 |
-|---|---|---|---|---|
-| Logistic Regression | 0.685 | 0.256 | **0.648** | 0.367 |
-| Linear SVM | 0.684 | 0.255 | 0.648 | 0.366 |
-| Decision Tree | 0.747 | 0.298 | 0.586 | 0.395 |
-| Random Forest | 0.732 | 0.271 | 0.534 | 0.359 |
-| Neural Network (MLP) | 0.863 | 0.522 | 0.330 | 0.404 |
+| Model | Search used | Accuracy | Precision | Recall | F1 | AUC |
+|---|---|---|---|---|---|---|
+| Logistic Regression | grid | 0.685 | 0.256 | **0.648** | 0.367 | 0.722 |
+| Linear SVM | grid | 0.684 | 0.255 | 0.648 | 0.366 | 0.722 |
+| Decision Tree | randomized | 0.725 | 0.285 | 0.635 | 0.394 | 0.744 |
+| Random Forest | randomized | 0.756 | 0.297 | 0.536 | 0.382 | 0.731 |
+| Neural Network (MLP) | grid | 0.863 | 0.522 | 0.330 | 0.404 | 0.792 |
 
-**Winner: Logistic Regression** (`C=0.1`, `class_weight="balanced"`) — tied
-with Linear SVM on recall (0.648) but slightly ahead on F1 (0.367 vs 0.366).
-Selected on recall first since missing a real fatal case is worse than a
-false alarm for this project (see notes above) — Decision Tree and Neural
-Network both have better F1/precision but noticeably lower recall, which
-matters more here.
+**Winner: Logistic Regression** (`C=0.1`, `class_weight="balanced"`, from
+grid search) — best recall (0.648), edges out Linear SVM on F1. Selected on
+recall first since missing a real fatal case is worse than a false alarm for
+this project — Decision Tree, Random Forest, and the Neural Network all have
+better precision/F1/AUC but noticeably lower recall, which matters more here.
 
-This pipeline (preprocessing + this classifier fit together, so preprocessing
-is properly refit per CV fold — fixes Aboud's issue #2 for the deployed
-model) is saved to `part2/final_model.pkl` and used directly by the Flask app.
+Worth a mention in the report: the Neural Network has the *best* AUC (0.792,
+meaning it ranks fatal-vs-not-fatal better across all thresholds) despite the
+*worst* recall at the default 0.5 threshold — a case where a different
+decision threshold could make it competitive. Not pursued further given the
+time available, but a legitimate "further work" point.
+
+This pipeline (preprocessing + the winning classifier fit together, so
+preprocessing is properly refit per CV fold — fixes Aboud's issue #2 for the
+deployed model) is saved to `part2/final_model.pkl` and used directly by the
+Flask app. ROC curves for all 5 models: `part2/roc_all_models.png`.
 
 ## Deployment
 
