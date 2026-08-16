@@ -40,6 +40,13 @@ drop_cols = [
     "x", "y",  # projected copies of LATITUDE/LONGITUDE, redundant
     "FATAL_NO",  # DATA LEAKAGE: only populated when the person died — its
                  # presence directly reveals the target, must never be a feature
+    "INJURY",  # DATA LEAKAGE: found by Aboud during Part 2 tuning (Aug 9) —
+               # INJURY == "Fatal" matches ACCLASS == "Fatal" in 974/975 cases
+               # (verified against the raw CSV). This is effectively a copy of
+               # the target, not a real predictive feature. Every model result
+               # reported before this fix (baseline comparison, and Aboud's/
+               # Ibrahim's individual tuning) was trained with this column
+               # included and should be treated as superseded.
     "STREET1", "STREET2",  # too high-cardinality (1,942 / 2,821 unique) to
                             # encode sensibly; DISTRICT/NEIGHBOURHOOD_158 already
                             # capture location at a usable granularity
@@ -84,8 +91,9 @@ categorical_cols = [
     # Group 1 — location/conditions
     "ROAD_CLASS", "DISTRICT", "ACCLOC", "TRAFFCTL", "VISIBILITY",
     "LIGHT", "RDSFCOND", "DIVISION", "NEIGHBOURHOOD_158",
-    # Group 2 — people/vehicles (pedestrian/cyclist-only columns excluded, see above)
-    "INVTYPE", "INVAGE", "INJURY", "INITDIR", "VEHTYPE", "MANOEUVER",
+    # Group 2 — people/vehicles (pedestrian/cyclist-only columns excluded, see
+    # above; INJURY dropped above as leakage, not listed here)
+    "INVTYPE", "INVAGE", "INITDIR", "VEHTYPE", "MANOEUVER",
     "DRIVACT", "DRIVCOND",
     # Group 3 — Yes/No flags
     "PEDESTRIAN", "CYCLIST", "AUTOMOBILE", "MOTORCYCLE", "TRUCK",

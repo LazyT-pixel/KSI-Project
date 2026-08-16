@@ -1,15 +1,54 @@
 # Part 2 Progress Notes (study reference)
 
-Last updated: Aug 4, 2026. Branch: `part2` (main is untouched, tagged `part1-submission`).
+Last updated: Aug 15, 2026 (due tomorrow, Aug 16). Branch: `part2` (main is untouched, tagged `part1-submission`).
+
+## ⚠ Data leak found and fixed (Aug 15)
+
+Aboud found this while tuning (see his notes in `part2/tune_aboud.py`): `INJURY`
+was included as a feature, but `INJURY == "Fatal"` matches `ACCLASS == "Fatal"`
+in 974 of 975 records — verified directly against the raw CSV. It's effectively
+a copy of the target, not a real predictive signal. Now dropped in `KSI.py`
+alongside `FATAL_NO` (same category of problem).
+
+**Every result below from before this fix is invalid and has been replaced**
+with the corrected baseline. Aboud's and Ibrahim's individual tuning runs
+(committed Aug 9) were done on the pre-fix pipeline — their write-ups on
+*how tuning behaves* (C values, max_depth, etc.) are still valid, but their
+specific accuracy/precision/recall/F1 numbers are stale and shouldn't be quoted
+as final in the report. Re-running isn't happening before tomorrow's deadline
+given the timing — this gets disclosed as a limitation instead (see below),
+same as the per-person/per-collision issue already was in Part 1.
+
+Two more issues Aboud flagged, lower severity, not fixed (documented as
+limitations instead — no time to safely re-architect the pipeline before
+tomorrow):
+- Preprocessing (imputers/scaler/encoder) is fit once on the full training
+  set before cross-validation runs, rather than being refit inside each CV
+  fold. This makes cross-validation scores slightly optimistic (not test-set
+  leakage, but not textbook-correct either).
+- The dataset is per-person, so multiple rows from the same collision
+  (same `ACCNUM`) can land in both train and test after the split. This is
+  the same per-person-vs-per-collision limitation already disclosed in the
+  Part 1 report's assumptions section — Aboud independently rediscovered it
+  from the modelling side.
+
+**Part 2 due date: August 16, 2026 (confirmed, tomorrow).** Aboud's checkpoint: August 9.
 
 ## What's actually done so far
 
-One thing only: a **baseline model comparison** (`part2/model_building.py`). It reuses
-the Part 1 pipeline in `KSI.py` exactly as-is (imports it as a module so cleaning/
-encoding/train-test-split logic isn't duplicated), then trains 5 classifiers with
-mostly-default settings and scores each on the 20% held-out test set (3,792 rows).
-
-Nothing has been tuned yet. Nothing has been deployed yet. This is step 1 of several.
+- Baseline model comparison (`part2/model_building.py`) — 5 untuned classifiers,
+  corrected pipeline.
+- Aboud's tuning of Logistic Regression + Linear SVM (`part2/tune_aboud.py`) —
+  found the INJURY leak, added randomized search and ROC/AUC curves beyond
+  what was asked. Numbers predate the leak fix (see warning above); his
+  methodology and conclusions about the C parameter still stand.
+- **Final tuned comparison across all 5 models** (`part2/final_model_selection.py`) —
+  see results and winner below.
+- **Model deployed**: `part2/final_model.pkl` + `part2/app.py` (Flask API + simple
+  form), verified working end-to-end.
+- Ibrahim's Decision Tree / Random Forest tuning — **not submitted as of Aug 15,
+  the day before the deadline.** Covered by the final comparison below so the
+  submission isn't blocked on it, but worth a direct check-in with him.
 
 ## The 5 models and why these 5
 
@@ -19,15 +58,20 @@ project — **not yet confirmed against the actual Part 2 assignment sheet**. If
 sheet names specific algorithms or a specific count, swap accordingly before this is
 final.
 
-## Baseline results (untuned)
+## Baseline results (untuned, corrected — INJURY leak removed, 369 features)
 
 | Model | Accuracy | Precision | Recall | F1 |
 |---|---|---|---|---|
-| Linear SVM | 0.791 | 0.367 | 0.670 | 0.474 |
-| Logistic Regression | 0.792 | 0.367 | 0.663 | 0.473 |
-| Decision Tree | 0.896 | 0.625 | 0.661 | 0.642 |
-| Neural Network (MLP) | 0.910 | 0.825 | 0.459 | 0.590 |
-| Random Forest | 0.922 | 0.996 | 0.448 | 0.618 |
+| Linear SVM | 0.678 | 0.251 | 0.648 | 0.362 |
+| Logistic Regression | 0.685 | 0.255 | 0.644 | 0.366 |
+| Decision Tree | 0.835 | 0.424 | 0.474 | 0.447 |
+| Random Forest | 0.890 | 0.961 | 0.228 | 0.369 |
+| Neural Network (MLP) | 0.866 | 0.593 | 0.161 | 0.253 |
+
+These are meaningfully worse than the pre-fix numbers (e.g. Decision Tree F1
+dropped from 0.642 to 0.447) — that drop is expected and is direct evidence
+the leak was real and inflating every model's apparent performance. This is
+the honest baseline going forward.
 
 **How to read this, for the review tomorrow:**
 
@@ -42,42 +86,71 @@ final.
   Random Forest's precision of 0.996 means it almost never falsely calls something
   fatal — but its low recall (0.448) means it misses over half of the real fatal
   cases. That's the opposite of what we want if the goal is catching risk early.
-- **The trade-off in one sentence:** Linear SVM and Logistic Regression catch the
-  most real fatal cases (~67%) but also raise a lot of false alarms (precision
-  ~0.37). Decision Tree is the best all-around balance right now (F1 0.642,
-  recall 0.661, and reasonable precision 0.625).
+- **The trade-off in one sentence:** Linear SVM and Logistic Regression still
+  catch the most real fatal cases (~65%) but now raise far more false alarms
+  than before (precision ~0.25, down from ~0.37) — removing the leaked
+  feature made the problem visibly harder, which is expected. Decision Tree
+  is the best all-around balance now (F1 0.447, recall 0.474, precision 0.424).
 - `class_weight="balanced"` is applied everywhere it's supported — this is what's
   pushing recall up across the board, since fatal cases are only ~14% of the data
   and models would otherwise mostly ignore that class.
 
-## What's next (in progress now)
+## Final tuned comparison (Aug 15, corrected pipeline)
 
-Splitting hyperparameter tuning across the team so no one model person is a
-bottleneck:
+Run via `part2/final_model_selection.py` — one consistent GridSearchCV pass
+(cv=5, scored on recall) across all 5 models, small grids given the time left
+before the deadline. Full grids and code are in that file.
 
-- **Aboud** — tune Logistic Regression + Linear SVM (`part2/tune_aboud.py`)
-- **Ibrahim** — tune Decision Tree + Random Forest (`part2/tune_ibrahim.py`)
-- **Aidan (me)** — Neural Network tuning, picking the final model, and deployment
-  (Flask API)
-- **Ali** — Report write-up (Executive Summary + Solution Overview sections)
+| Model | Accuracy | Precision | Recall | F1 |
+|---|---|---|---|---|
+| Logistic Regression | 0.685 | 0.256 | **0.648** | 0.367 |
+| Linear SVM | 0.684 | 0.255 | 0.648 | 0.366 |
+| Decision Tree | 0.747 | 0.298 | 0.586 | 0.395 |
+| Random Forest | 0.732 | 0.271 | 0.534 | 0.359 |
+| Neural Network (MLP) | 0.863 | 0.522 | 0.330 | 0.404 |
 
-Both tuning scripts are set up to run standalone (`python3 part2/tune_aboud.py` /
-`part2/tune_ibrahim.py`, run from the main project folder) — they reuse the same
-`KSI.py` pipeline via `sys.path`, run a small grid search (`GridSearchCV`, scored
-on recall), and print best settings + test-set results in the same format as above,
-so results are directly comparable to the baseline table.
+**Winner: Logistic Regression** (`C=0.1`, `class_weight="balanced"`) — tied
+with Linear SVM on recall (0.648) but slightly ahead on F1 (0.367 vs 0.366).
+Selected on recall first since missing a real fatal case is worse than a
+false alarm for this project (see notes above) — Decision Tree and Neural
+Network both have better F1/precision but noticeably lower recall, which
+matters more here.
 
-## After tuning comes back
+This pipeline (preprocessing + this classifier fit together, so preprocessing
+is properly refit per CV fold — fixes Aboud's issue #2 for the deployed
+model) is saved to `part2/final_model.pkl` and used directly by the Flask app.
 
-1. Compare all 5 tuned models, pick the strongest one (recall-weighted, not just
-   accuracy) as the final model for deployment.
-2. Model scoring/evaluation write-up (this is a separate graded component —
-   worth documenting the accuracy-vs-recall reasoning above properly, not just
-   picking a winner).
-3. Deployment: pickle the final pipeline + model, build a small Flask API around
-   it, test it with sample inputs.
-4. Finish the report (Executive Summary + Solution Overview were left as
-   placeholders in Part 1 — Ali's task now) and presentation prep.
+## Deployment
+
+`part2/app.py` — Flask API + a simple HTML form, loads `final_model.pkl`.
+
+```
+python3 part2/app.py
+```
+
+Then open `http://127.0.0.1:5000` for the form, or POST JSON to `/predict`:
+```
+curl -X POST http://127.0.0.1:5000/predict -H "Content-Type: application/json" \
+  -d '{"DISTRICT": "Scarborough", "LIGHT": "Dark", "HOUR": 5, "SPEEDING": "Yes"}'
+```
+Any fields left out are treated as missing and imputed the same way the
+training pipeline handles missing data. Verified working end-to-end (tested
+with Flask's test client, not just eyeballed) — a high-risk input (dark,
+5 AM, speeding) predicts FATAL at 73.3% probability; an empty input predicts
+NOT FATAL at 49.8% (note: this sits close to 50/50 rather than near the true
+14% base rate — an expected side effect of `class_weight="balanced"`
+recalibrating predicted probabilities, worth a one-line mention in the report
+rather than treating it as a bug).
+
+## Still open
+
+1. Report write-up — Ali's Executive Summary + Solution Overview (see
+   `ALI_REPORT_OUTLINE.md`), plus the Model Scoring/Evaluation section needs
+   the corrected numbers and leak story from this file worked in.
+2. Ibrahim's tuning — not submitted; his section of the final comparison
+   above was covered directly instead, but worth confirming with him before
+   submission whether he still wants to contribute something.
+3. Presentation prep.
 
 ## Open questions not yet resolved
 
@@ -85,6 +158,7 @@ so results are directly comparable to the baseline table.
 - Extension request: no reply yet; a submission drop box opened after the fact
   and was missed by ~2 days — unclear if that counts as late, worth a short
   follow-up email once there's a reply.
-- Confirmed Part 2 due date: not yet confirmed from the course shell.
-- Aboud's participation: given another chance, with an earlier internal deadline
-  this time so there's buffer if he doesn't deliver again.
+- Confirmed Part 2 due date: **August 16, 2026** (confirmed Aug 15 — an earlier
+  message in this project said Aug 18, that was wrong).
+- Aboud's participation: given another chance, checkpoint set for August 9 —
+  buffer of ~9 days before the real deadline if he doesn't deliver again.
