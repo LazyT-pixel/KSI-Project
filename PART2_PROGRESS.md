@@ -157,18 +157,17 @@ rather than treating it as a bug).
 1. Report write-up — Ali's Executive Summary + Solution Overview (see
    `ALI_REPORT_OUTLINE.md`), plus the Model Scoring/Evaluation section needs
    the corrected numbers and leak story from this file worked in.
-2. Ibrahim's tuning — not submitted; his section of the final comparison
-   above was covered directly instead, but worth confirming with him before
-   submission whether he still wants to contribute something.
+2. Ibrahim's tuning — not submitted by the deadline; his section of the
+   final comparison above was covered directly by Aidan instead. Ibrahim
+   returned afterward to help finish remaining work.
 3. Presentation prep.
 
 ## Open questions not yet resolved
 
-- Part 1 grade/feedback: not received yet.
-- Extension request: no reply yet; a submission drop box opened after the fact
-  and was missed by ~2 days — unclear if that counts as late, worth a short
-  follow-up email once there's a reply.
+- Part 1 grade/feedback: received.
 - Confirmed Part 2 due date: **August 16, 2026** (confirmed Aug 15 — an earlier
   message in this project said Aug 18, that was wrong).
 - Aboud's participation: given another chance, checkpoint set for August 9 —
-  buffer of ~9 days before the real deadline if he doesn't deliver again.
+  buffer of ~9 days before the real deadline if he doesn't deliver again. Aboud
+  did make this deliverable and managed to complete his work on time.
+- Ali completed his report and presentation work on time.
